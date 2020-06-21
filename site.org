@@ -58,7 +58,7 @@ You can download the latest binary package from **here** or from the [[https://g
      (letrec ((v  (version-string))
               (nv (string-trim v "v")))
        (princ "\n\n{{<tabs \"install\">}}\n")
-       (princ (section-for "Linux (x86)" v "reno-linux-x86.zip" "./reno"))
+       (princ (section-for "Linux (x64)" v "reno-linux-x64.zip" "./reno"))
        (princ (section-for "Generic (Java)" v (format "reno-%s.jar" nv) (format "java -jar reno-%s.jar" nv)))
        (princ "{{< /tabs >}}\n\n"))
  #+END_SRC
