@@ -1,0 +1,11 @@
+baseURL = "https://j-keck.github.io/reno"
+languageCode = "en-us"
+title = "reno"
+theme = "book"
+canonifyURLs = true
+
+[markup.goldmark.renderer]
+unsafe = true
+
+[params]
+  BookSearch = false

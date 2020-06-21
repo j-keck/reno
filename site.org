@@ -1,0 +1,89 @@
+#
+# The gh-pages site at 'https://j-keck.github.io/reno
+# are generated from this file
+
+#
+#+title: reno - reading notes extractor
+#+hugo_base_dir: ./doc/site
+#+options: creator:t author:nil
+
+* Index
+:PROPERTIES:
+:export_title: reno
+:export_file_name: _index
+:export_hugo_section: /
+:export_hugo_weight: 10
+:export_hugo_type: docs
+:END:
+
+~reno~ extracts highlighted text from your pdf in an org-file.
+
+The highlighted text be placed in a ~#+BEGIN_QUOTE~ / ~#+END_QUOTE~ block
+and a drawer with the id's from extracted text.
+
+You can later run an update and ~reno~ will recognize the exported blocks and
+don't export it a second time / insert new highlighted text in right position.
+
+Other text, headings, quotes and src blocks will keep intact.
+
+
+{{< hint info >}}
+More documentation / examples later.
+{{< /hint >}}
+
+* Installation
+  :PROPERTIES:
+  :export_file_name: install
+  :export_hugo_weight: 20
+  :export_hugo_section: docs
+  :END:
+
+** Binary packages
+
+You can download the latest binary package from **here** or from the [[https://github.com/j-keck/reno/releases][GitHub release page]].
+
+ #+BEGIN_SRC elisp :results output raw :exports results
+   (defun version-string ()
+       "Lookup the latest `reno' version."
+       (s-trim-right (shell-command-to-string "git describe --always --abbrev=0 --match 'v[0-9].[0-9].[0-9]'")))
+
+     (defun section-for (title version artifact exec)
+       (format (concat "{{< tab \"%s\" >}}\n"
+                       "  1.) **Download** the latest version: "
+                       "[[https://github.com/j-keck/reno/releases/download/%s/%s][%s]]\n\n"
+                       "  2.) Run it:  ~%s~\n"
+                       "{{< /tab >}}\n\n"
+               ) title version artifact artifact exec))
+
+     (letrec ((v  (version-string))
+              (nv (string-trim v "v")))
+       (princ "\n\n{{<tabs \"install\">}}\n")
+       (princ (section-for "Linux (x86)" v "reno-linux-x86.zip" "./reno"))
+       (princ (section-for "Generic (Java)" v (format "reno-%s.jar" nv) (format "java -jar reno-%s.jar" nv)))
+       (princ "{{< /tabs >}}\n\n"))
+ #+END_SRC
+
+
+
+* Contact / Support
+  :PROPERTIES:
+  :export_file_name: contact-support
+  :export_hugo_weight: 60
+  :export_hugo_section: docs
+  :END:
+
+** Contact
+
+{{< columns >}}
+[[https://github.com/j-keck][{{< fas envelope >}} Check my GitHub Profile for my mail address.]]
+<--->
+[[https://twitter.com/jhyphenkeck][{{< fab twitter >}} Send me an direct message on twitter.]]
+<--->
+[[https://keybase.io/jkeck][{{< fab keybase >}} Use keybase to contact me.]]
+{{< /columns >}}
+
+
+** Support
+
+If you have any questions, trouble or other input, feel free to contact
+me directly (see [[/docs/contact-support#contact][Contact]]) or open a [[https://github.com/j-keck/reno/issues/new][issue@github]].
