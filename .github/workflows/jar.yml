@@ -1,0 +1,34 @@
+name: jar
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+  jar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.coursier/cache/v1
+            ~/.cache/coursier/v1
+          key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties')}}
+
+      - uses: olafurpg/setup-scala@v7
+        with:
+          java-version: openjdk@1.8
+
+      - run: git fetch --tags || true
+
+      - run: sbt package-jar
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: target/scala-2.13/reno-**.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

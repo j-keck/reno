@@ -1,0 +1,51 @@
+name: native-image
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+  native-image:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        include:
+          - os: ubuntu-latest
+            artifact: reno-linux-x64
+            COURSIER_CACHE: ~/.cache/coursier/v1
+          - os: macOS-latest
+            artifact: reno-macOS
+            COURSIER_CACHE: ~/Library/Caches/Coursier/v1
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.coursier/cache/v1
+            ${COURSIER_CACHE}
+          key: ${{ runner.os }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties')}}
+
+      - uses: olafurpg/setup-scala@v7
+        with:
+          java-version: graalvm-ce-java11@20.1.0
+
+      - run: git fetch --tags || true
+      - run: gu install native-image
+      - run: |
+          sbt package-native
+          cd target/graalvm-native-image
+          ./reno --help
+          echo "reno version: $(./reno --version)"
+          zip ${{ matrix.artifact }}.zip reno
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: target/graalvm-native-image/${{ matrix.artifact }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
