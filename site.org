@@ -65,6 +65,36 @@ You can download the latest binary package from **here** or from the [[https://g
 
 
 
+* Usage
+  :PROPERTIES:
+  :export_file_name: example
+  :export_hugo_weight: 20
+  :export_hugo_section: docs
+  :END:
+
+#+BEGIN_EXAMPLE
+Usage:
+    reno dump
+    reno update
+
+reading notes extractor
+
+Options and flags:
+    --help
+        Display this help text.
+    --version, -v
+        Print the version number and exit.
+
+Subcommands:
+    dump
+        Dump the annotations from the given Pdf
+    update
+        update the notes in the Org-file with new annotations from the Pdf
+
+#+END_EXAMPLE
+
+
+
 * Contact / Support
   :PROPERTIES:
   :export_file_name: contact-support
