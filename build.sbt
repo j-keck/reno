@@ -9,6 +9,7 @@ lazy val root = (project in file("."))
     scalaVersion := "2.13.2",
     scalacOptions += "-target:jvm-1.8",
     maintainer := "code@j-keck.net",
+    commands += noFatalWarnings,
     // git
     git.useGitDescribe := true,
     buildInfoPackage := "reno",
@@ -76,6 +77,20 @@ lazy val root = (project in file("."))
       options
     }
   )
+
+def noFatalWarnings =
+  Command.command("no-fatal-warnings", "allow warnings", "remove '-Xfatal-warnings' from `scalacOptions`") { state =>
+    val extracted = Project extract state
+    import extracted._
+    appendWithoutSession(
+      Seq(
+        scalacOptions ~= { options: Seq[String] =>
+          options.filterNot(Seq("-Xfatal-warnings").contains)
+        }
+      ),
+      state
+    )
+  }
 
 inThisBuild(
   Seq(
