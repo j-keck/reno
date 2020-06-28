@@ -1,26 +1,33 @@
 +++
-title = "Usage"
+title = "Example"
 draft = false
 creator = "Emacs 26.3 (Org mode 9.1.9 + ox-hugo)"
-weight = 20
+weight = 40
 +++
 
-```text
-Usage:
-    reno dump
-    reno update
+## Reading notes {#reading-notes}
 
-reading notes extractor
+I use `reno` to add some reading notes:
 
-Options and flags:
-    --help
-        Display this help text.
-    --version, -v
-        Print the version number and exit.
+From this marked PDF Document:
+ ![](/market-text-example.png)
 
-Subcommands:
-    dump
-        Dump the annotations from the given Pdf
-    update
-        update the notes in the Org-file with new annotations from the Pdf
-```
+i get (after some edits) this org-mode snippet:
+ ![](/market-text-example-notes-org.png)
+
+where i can
+
+-   changed some quotes to headers
+-   add some notes for me
+
+
+## Play with code {#play-with-code}
+
+Mark some challenges:
+![](/market-challenges.png)
+
+And include some org-babel source blocks to solve some challenges:
+![](/market-challenges-notes-org.png)
+
+And export it from Emacs as Pdf to read it later again:
+![](/market-challenges-notes-pdf.png)

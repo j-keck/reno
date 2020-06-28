@@ -1,0 +1,52 @@
+* Category: The Essence of Composition
+:RENO_MARKER_IDS:
+okular-{7b1bdcc5-5de7-4ba6-aa99-20b666e9c39e}
+:END:
+
+#+BEGIN_QUOTE
+A category consists of objects and arrows that go between them
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{4c480f5c-f0db-499a-9d05-cdcde057f2a2}
+okular-{93d78dc1-ca83-440a-a2b3-8de94b3226ab}
+okular-{f1c87d56-ba52-4f8b-b9de-2069d9357a7e}
+okular-{4a144973-8746-4dfd-ad03-35656c0c6e59}
+okular-{9c21dca6-4e77-4489-aa1e-fdc950420f77}
+okular-{8fd5e93f-a01b-4008-b879-ce613acb92f9}
+okular-{e43e1ea9-3ac6-4b2b-b34d-c713e7d45f2a}
+:END:
+
+#+BEGIN_QUOTE
+But the essence of a category is composition.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{74a0ce24-ad61-4051-9f54-e490d23182ae}
+:END:
+
+The composition of arrows between the objects.
+
+#+BEGIN_QUOTE
+Arrows compose, so if you have an arrow from object $A$ to object $B$, and another arrow from object $B$
+to object $C$, then there must be an arrow — their composition — that goes from $A$ to $C$.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{561f69c0-bdca-4d17-89ab-cd42c8f129ca}
+:END:
+
+** Arrows as Functions
+:RENO_MARKER_IDS:
+okular-{c5da8e63-fb44-4934-b803-437a5d473984}
+:END:
+
+#+BEGIN_QUOTE
+Think of arrows, which are also called morphisms, as functions.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{3ad003ee-334f-4d88-adb6-cae7d4a9a88e}
+:END:
+
+Arrows can be seen as:
+- as **functions**
+- a **relation** between objects
+- /more examples.../
+

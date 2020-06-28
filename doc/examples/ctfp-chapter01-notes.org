@@ -1,0 +1,192 @@
+#+TITLE: Category Theory for Programmers
+#+OPTIONS: d:nil
+
+* Category: The Essence of Composition
+:RENO_MARKER_IDS:
+okular-{7b1bdcc5-5de7-4ba6-aa99-20b666e9c39e}
+:END:
+
+#+BEGIN_QUOTE
+A category consists of objects and arrows that go between them
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{4c480f5c-f0db-499a-9d05-cdcde057f2a2}
+okular-{93d78dc1-ca83-440a-a2b3-8de94b3226ab}
+okular-{f1c87d56-ba52-4f8b-b9de-2069d9357a7e}
+okular-{4a144973-8746-4dfd-ad03-35656c0c6e59}
+okular-{9c21dca6-4e77-4489-aa1e-fdc950420f77}
+okular-{8fd5e93f-a01b-4008-b879-ce613acb92f9}
+okular-{e43e1ea9-3ac6-4b2b-b34d-c713e7d45f2a}
+:END:
+
+#+BEGIN_QUOTE
+But the essence of a category is composition.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{74a0ce24-ad61-4051-9f54-e490d23182ae}
+:END:
+
+The composition of arrows between the objects.
+
+#+BEGIN_QUOTE
+Arrows compose, so if you have an arrow from object $A$ to object $B$, and another arrow from object $B$
+to object $C$, then there must be an arrow — their composition — that goes from $A$ to $C$.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{561f69c0-bdca-4d17-89ab-cd42c8f129ca}
+:END:
+
+** Arrows as Functions
+:RENO_MARKER_IDS:
+okular-{c5da8e63-fb44-4934-b803-437a5d473984}
+:END:
+
+#+BEGIN_QUOTE
+Think of arrows, which are also called morphisms, as functions.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{3ad003ee-334f-4d88-adb6-cae7d4a9a88e}
+:END:
+
+Arrows can be seen as:
+- as **functions**
+- a **relation** between objects
+- /more examples.../
+
+
+** Properties of Composition
+:RENO_MARKER_IDS:
+okular-{66afe9a2-f73d-4220-b73b-e0b0bf789a69}
+:END:
+
+#+BEGIN_QUOTE
+1. Composition is associative.
+  If you have three morphisms, $f$, $g$, and $h$, that can be composed (that is, their objects match end-to-end),
+  you don’t need parentheses to compose them. In math notation this is expressed as:
+  $$h \circ (g \circ f) = (h \circ g) \circ f = h \circ g \circ f$$
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{c87c4560-1947-4a3d-ae5c-d529970e2663}
+:END:
+
+#+BEGIN_QUOTE
+2. For every object $A$ there is an arrow which is a unit of composition.
+  This arrow loops from the object to itself. Being a unit of composition means that,
+  when composed with any arrow that either starts at $A$ or ends at $A$, respectively,
+  it gives back the same arrow. The unit arrow for object $A$ is called $id_A$ (identity on $A$).
+  In math notation, if $f$ goes from $A$ to $B$ then and $f \circ id_A =$ and $id_B \circ f = f$.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{3619f521-8383-4e60-9585-1b40d81f3156}
+:END:
+
+#+BEGIN_QUOTE
+To summarize: A category consists of objects and arrows (morphisms). Arrows can be composed, and the composition
+is associative. Every object has an identity arrow that serves as a unit under composition.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{106be173-3c63-4026-ba7f-fbbfcf84b259}
+:END:
+
+** Composition is the Essence of Programming
+:RENO_MARKER_IDS:
+okular-{71778ea1-21cd-474f-8e8c-554afe7d8f69}
+:END:
+
+#+BEGIN_QUOTE
+And how do we solve problems? We decompose bigger problems into smaller problems. If the smaller problems are still
+too big, we decompose them further, and so on. Finally, we write code that solves all the small problems.
+And then comes the essence of programming: we compose those pieces of code to create solutions to larger problems.
+Decomposition wouldn’t make sense if we weren’t able to put the pieces back together.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{49bdcd5c-300b-4b3d-9d6a-74d9f6080887}
+okular-{e9df14ee-5df3-463e-9a06-9a113c83380d}
+:END:
+
+#+BEGIN_QUOTE
+The Magical Number Seven, Plus or Minus Two, postulated that we can only keep 7 ± 2 “chunks” of information in our minds.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{37ce5eae-e01e-4175-95fc-b31134eac95f}
+:END:
+
+** Challenges
+:RENO_MARKER_IDS:
+okular-{0d975a16-5a37-4340-9320-a16f8cbe7be5}
+:END:
+
+#+BEGIN_QUOTE
+Implement, as best as you can, the identity function in your favorite language
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{1a4350d1-e061-4398-b440-d6c5e42437e8}
+:END:
+
+#+BEGIN_SRC scala :exports code
+def id[A](a: A): A = a
+#+END_SRC
+
+#+RESULTS:
+: defined function id
+
+#+BEGIN_QUOTE
+Implement the composition function in your favorite language.
+It takes two functions as arguments and returns a function that is their composition.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{657f331a-2db9-4f63-a35f-c11fddb1f009}
+:END:
+
+#+BEGIN_SRC scala :exports code
+def compose[A, B, C](f: A => B)(g: B => C): A => C = a => g(f(a))
+#+END_SRC
+
+#+RESULTS:
+: defined function compose
+
+#+BEGIN_QUOTE
+Write a program that tries to test that your composition function respects identity.
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{a05f94c9-7cdf-486c-95b0-6dd60ab39d31}
+:END:
+
+#+BEGIN_SRC scala :exports both
+compose[Int, Int, Int](id)(id)(4) == 4
+#+END_SRC
+
+#+RESULTS:
+: res2: Boolean = true
+
+
+
+#+BEGIN_QUOTE
+Is the world-wide web a category in any sense? Are links morphisms?
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{709f2f6c-50ab-46fe-b09d-1bbcfde1889b}
+:END:
+
+Yes
+
+
+#+BEGIN_QUOTE
+Is Facebook a category, with people as objects and friendships as morphisms?
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{b7f62d8a-8e8f-477c-bdc0-1f55ae3cd512}
+:END:
+
+Yes - the morphism is 'relationship'.
+
+
+#+BEGIN_QUOTE
+When is a directed graph a category?
+#+END_QUOTE
+:RENO_MARKER_IDS:
+okular-{b585e808-9b94-4d69-8d8a-7c6731ecfcce}
+:END:
+
+If there is an identity arrow on each node.
+
