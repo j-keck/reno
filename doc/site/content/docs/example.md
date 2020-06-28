@@ -10,24 +10,30 @@ weight = 40
 I use `reno` to add some reading notes:
 
 From this marked PDF Document:
- ![](/market-text-example.png)
+
+{{< figure src="/market-text-example.png" >}}
 
 i get (after some edits) this org-mode snippet:
- ![](/market-text-example-notes-org.png)
+
+{{< figure src="/market-text-example-notes-org.png" >}}
 
 where i can
 
--   changed some quotes to headers
+-   change some quotes to headers
+-   edit exported text
 -   add some notes for me
 
 
 ## Play with code {#play-with-code}
 
-Mark some challenges:
-![](/market-challenges.png)
+I can mark some challenges:
 
-And include some org-babel source blocks to solve some challenges:
-![](/market-challenges-notes-org.png)
+{{< figure src="/market-challenges.png" >}}
 
-And export it from Emacs as Pdf to read it later again:
-![](/market-challenges-notes-pdf.png)
+include some org-babel source blocks to solve the challenges:
+
+{{< figure src="/market-challenges-notes-org.png" >}}
+
+and export it from Emacs as Pdf to read it later again:
+
+{{< figure src="/market-challenges-notes-pdf.png" >}}
