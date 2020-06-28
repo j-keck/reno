@@ -2,27 +2,24 @@ package reno.pdf
 
 import java.nio.file.Path
 
+import cats.effect.Sync
 import cats.implicits._
-import cats.effect.{Resource, Sync}
 import io.chrisdavenport.log4cats.Logger
-import org.apache.pdfbox.pdmodel.PDDocument
+import reno.pdf.engine.{ITextEngine, PDFBoxEngine}
 
 case class Pdf(info: PdfInfo, annotations: Annotations)
 
 object Pdf {
 
-  def fromPath[F[_]: Sync: Logger](path: Path, markFrom: Annotations.From = Annotations.From.Quads): F[Pdf] =
+  def fromPath[F[_]: Sync: Logger](
+      path: Path,
+      engine: PdfEngine,
+      markFrom: Mark.From
+  ): F[Pdf] =
     Logger[F].info(s"Processing ${path.getFileName}") *>
-      pdDocumentResource(path).use { doc =>
-        val info = PdfInfo.fromPDDocument(doc, path)
-        Annotations.extractAnnotations(doc, markFrom).map(Pdf(info, _))
-      }
+      (engine match {
+        case PdfEngine.PDFBox => PDFBoxEngine.fromPath(path, markFrom)
+        case PdfEngine.IText  => ITextEngine.fromPath(path, markFrom)
+      })
 
-  private def pdDocumentResource[F[_]: Sync](path: Path): Resource[F, PDDocument] = {
-    def acquire = Sync[F].delay(PDDocument.load(path.toFile))
-
-    def release = (doc: PDDocument) => Sync[F].delay(doc.close())
-
-    Resource.make(acquire)(release)
-  }
 }

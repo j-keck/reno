@@ -1,9 +1,11 @@
 package reno.pdf
 
+import java.awt.geom.Rectangle2D
+
 import cats.data.NonEmptyList
-import cats.syntax.list._
-import org.apache.pdfbox.pdmodel._
-import org.apache.pdfbox.pdmodel.interactive.annotation._
+import cats.implicits._
+import reno.pdf.engine.PageInfo
+import reno.pdf.engine.PageInfo.Orientation
 
 /**
   * Marked area in the pdf
@@ -11,53 +13,28 @@ import org.apache.pdfbox.pdmodel.interactive.annotation._
 case class Mark private[reno] (id: String, rects: NonEmptyList[Rect2D]) {
 
   def onSameLines(other: Mark): Boolean = {
-    val rows = this.rects.flatMap(r => NonEmptyList.of(r.leftBottom.row, r.rightTop.row))
-    other.rects.exists(rect => rows.exists(row => row == rect.leftBottom.row || row == rect.rightTop.row))
+    val rows = this.rects.flatMap(r => NonEmptyList.of(r.leftBottom.y, r.rightTop.y))
+    other.rects.exists(rect => rows.exists(y => y == rect.leftBottom.y || y == rect.rightTop.y))
   }
+
+  def startPos: Rect2D = rects.sorted.head
 
 }
 
 object Mark {
 
-  def from(
-      page: PDPage,
-      annotation: PDAnnotationTextMarkup,
-      from: Annotations.From
-  ): Either[ProcessingPdfError, Mark] = {
-    val id = annotation.getAnnotationName
-    val rects = from match {
-      case Annotations.From.BoundingRect => boundingRect(page, annotation)
-      case Annotations.From.Quads        => quads(page, annotation)
-    }
-    rects.map(Mark(id, _))
+  import _root_.enumeratum._
+
+  def fromBoundingRect(id: String, pageInfo: PageInfo, rect: Rectangle2D.Float): Either[ProcessingPdfError, Mark] = {
+    if (pageInfo.orientation == Orientation.Portrait) rect.y = pageInfo.height - rect.y
+    Mark(id, NonEmptyList.one(Rect2D.fromRectangle2D(rect))).asRight
   }
 
-  private def boundingRect(
-      page: PDPage,
-      annotation: PDAnnotationTextMarkup
-  ): Either[ProcessingPdfError, NonEmptyList[Rect2D]] = {
-    Option(annotation.getRectangle)
-      .map { rect =>
-        val x = rect.getLowerLeftX
-        val y = {
-          val y = rect.getUpperRightY
-          if (page.getRotation == 0) page.getMediaBox.getHeight - y
-          else y
-        }
-        val w = rect.getWidth
-        val h = rect.getHeight
-
-        NonEmptyList.one(Rect2D.from(x = x, y = y, w = w, h = h))
-      }
-      .toRight(ProcessingPdfError("rectangle from annotation not found"))
-  }
-
-  private def quads(
-      page: PDPage,
-      annotation: PDAnnotationTextMarkup
-  ): Either[ProcessingPdfError, NonEmptyList[Rect2D]] = {
-    val quads = annotation.getQuadPoints
-
+  def fromQuadPoints(
+      id: String,
+      pageInfo: PageInfo,
+      quads: Array[Float]
+  ): Either[ProcessingPdfError, Mark] =
     (0 until quads.length / 8)
       .map { i =>
         var (minX, minY, maxX, maxY) = (Float.MaxValue, Float.MaxValue, Float.MinValue, Float.MinValue)
@@ -72,7 +49,7 @@ object Mark {
         val x = quads(i * 8) - 1
         val y = {
           val y = quads(i * 8 + 1) - 1
-          if (page.getRotation == 0) page.getMediaBox.getHeight - y
+          if (pageInfo.orientation == Orientation.Portrait) pageInfo.height - y
           else y
         }
         val w = maxX - minX + 2
@@ -83,10 +60,18 @@ object Mark {
       .toList
       .toNel
       .toRight(ProcessingPdfError("quads from annotation not found"))
+      .map(Mark(id, _))
+
+  sealed trait From extends EnumEntry with EnumEntry.Lowercase
+
+  object From extends Enum[From] {
+    val values = findValues
+    case object BoundingRect extends From
+    case object Quads        extends From
   }
 
   implicit val orderingMark: Ordering[Mark] = (x: Mark, y: Mark) =>
     // compares by the text start position
-    Ordering[Rect2D].compare(x.rects.sorted.head, y.rects.sorted.head)
+    Ordering[Rect2D].compare(x.startPos, y.startPos)
 
 }

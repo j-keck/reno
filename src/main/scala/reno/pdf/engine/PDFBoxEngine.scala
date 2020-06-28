@@ -1,30 +1,42 @@
-package reno.pdf
+package reno.pdf.engine
 
-import cats.effect._
+import java.awt.geom.Rectangle2D
+import java.nio.file.Path
+
+import cats.effect.{Resource, Sync}
 import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
-import org.apache.pdfbox.pdmodel.interactive.annotation._
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup
 import org.apache.pdfbox.pdmodel.{PDDocument, PDPage}
-import org.apache.pdfbox.text._
+import org.apache.pdfbox.text.PDFTextStripperByArea
+import reno.pdf._
+import reno.pdf.engine.PageInfo.Orientation
 
 import scala.jdk.CollectionConverters._
 
-object Annotations {
+object PDFBoxEngine extends Engine[PDDocument, PDPage, PDAnnotationTextMarkup] {
 
-  sealed trait From
+  override def docResource[F[_]: Sync: Logger](path: Path): Resource[F, PDDocument] = {
+    def acquire = Sync[F].delay(PDDocument.load(path.toFile))
 
-  object From {
+    def release = (doc: PDDocument) => Sync[F].delay(doc.close())
 
-    case object BoundingRect extends From
-
-    case object Quads extends From
-
+    Resource.make(acquire)(release)
   }
 
-  def extractAnnotations[F[_]: Sync: Logger](
-      doc: PDDocument,
-      markFrom: From
-  ): F[Annotations] = {
+  override def extractPdfInfo[F[_]: Sync: Logger](doc: PDDocument, path: Path): F[PdfInfo] = {
+    val info = doc.getDocumentInformation
+    PdfInfo(
+      title = info.getTitle,
+      author = info.getAuthor,
+      subject = info.getSubject,
+      created = info.getCreationDate,
+      keywords = info.getKeywords,
+      path = path
+    ).pure[F]
+  }
+
+  override def extractAnnotations[F[_]: Sync: Logger](doc: PDDocument, markFrom: Mark.From): F[Annotations] = {
     val pages: List[(PDPage, Int)] =
       doc.getDocumentCatalog.getPages.asScala.zip(LazyList.from(1)).toList
 
@@ -38,8 +50,7 @@ object Annotations {
               Logger[F].trace(s"TextMarkup on page $pageNumber found") *>
                 Sync[F]
                   .fromEither[Annotation](
-                    Mark
-                      .from(page, annotation, markFrom)
+                    getMark(page, annotation, markFrom)
                       .map { mark =>
                         val text = extractText(page, mark)
                         TextMarkupAnnotation(pageNumber, mark, text)
@@ -61,12 +72,6 @@ object Annotations {
       .map(_.flatten.toSeq)
   }
 
-  // list annotation PDFBox classes
-  def listAnnotations[F[_]: Sync](doc: PDDocument): F[Seq[String]] =
-    Sync[F].delay(doc.getDocumentCatalog.getPages.asScala.flatMap { page =>
-      page.getAnnotations.asScala.toList.map(_.getClass.getName)
-    }.toSeq)
-
   private def extractText(page: PDPage, mark: Mark): String = {
     val stripper = new PDFTextStripperByArea()
 
@@ -83,10 +88,32 @@ object Annotations {
     // run the extraction
     stripper.extractRegions(page)
 
-    // build the resulting text
+    // build the resulting textDoc
     val sentence =
       for (id <- stripper.getRegions.asScala)
         yield stripper.getTextForRegion(id)
     sentence.mkString(" ").replaceAll("\n", " ").replaceAll(" {2}", " ")
   }
+
+  override protected def getPageInfo(page: PDPage): PageInfo = {
+    val mb = page.getMediaBox
+    val orientation = page.getRotation match {
+      case 0 => Orientation.Portrait
+      case _ => Orientation.Landscape
+    }
+    PageInfo(orientation, mb.getWidth, mb.getHeight)
+  }
+
+  override protected def getAnnotationId(annotation: PDAnnotationTextMarkup): String = annotation.getAnnotationName
+
+  override protected def getBoundingRect(
+      annotation: PDAnnotationTextMarkup
+  ): Either[ProcessingPdfError, Rectangle2D.Float] = {
+    val pdRect = annotation.getRectangle
+    new Rectangle2D.Float(pdRect.getLowerLeftX, pdRect.getUpperRightY, pdRect.getWidth, pdRect.getHeight).asRight
+  }
+
+  override protected def getQuadPoints(annotation: PDAnnotationTextMarkup): Either[ProcessingPdfError, Array[Float]] =
+    annotation.getQuadPoints.asRight
+
 }

@@ -1,6 +1,8 @@
 package reno
 
 import java.awt.geom.Rectangle2D
+import java.nio.file.Path
+import java.util.Calendar
 
 import cats._
 
@@ -12,48 +14,37 @@ package object pdf {
 
 package pdf {
 
-  import java.nio.file.Path
-  import java.util.Calendar
+  import _root_.enumeratum._
 
-  import org.apache.pdfbox.pdmodel.PDDocument
+  sealed trait PdfEngine extends EnumEntry with EnumEntry.Lowercase
+  object PdfEngine extends Enum[PdfEngine] {
+    val values = findValues
+
+    case object PDFBox extends PdfEngine
+    case object IText  extends PdfEngine
+  }
 
   case class PdfInfo(title: String, author: String, subject: String, created: Calendar, keywords: String, path: Path)
 
-  object PdfInfo {
-    def fromPDDocument(doc: PDDocument, path: Path): PdfInfo = {
-      val info = doc.getDocumentInformation
-      PdfInfo(
-        title = info.getTitle,
-        author = info.getAuthor,
-        subject = info.getSubject,
-        created = info.getCreationDate,
-        keywords = info.getKeywords,
-        path = path
-      )
-    }
-  }
-
   case class Rect2D(leftBottom: Pos, rightTop: Pos) {
-    def toRectangle2D: Rectangle2D.Float =
-      new Rectangle2D.Float(
-        leftBottom.col,
-        leftBottom.row,
-        rightTop.col - leftBottom.col,
-        rightTop.row - leftBottom.row
-      )
+    lazy val x = leftBottom.x
+    lazy val y = leftBottom.y
+    lazy val w = rightTop.x - leftBottom.x
+    lazy val h = rightTop.y - leftBottom.y
+
+    def toRectangle2D: Rectangle2D.Float = new Rectangle2D.Float(x, y, w, h)
   }
 
   object Rect2D {
 
-    def from(x: Float, y: Float, w: Float, h: Float): Rect2D = {
-      val (row, col) = (y, x)
-      val leftBottom = Pos(row, col)
-      val rightTop   = Pos(row + h, col + w)
-      Rect2D(leftBottom, rightTop)
-    }
-
     def fromRectangle2D(r: Rectangle2D.Float): Rect2D = {
       from(x = r.x, y = r.y, w = r.width, h = r.height)
+    }
+
+    def from(x: Float, y: Float, w: Float, h: Float): Rect2D = {
+      val leftBottom = Pos(x, y)
+      val rightTop   = Pos(x + w, y + h)
+      Rect2D(leftBottom, rightTop)
     }
 
     implicit val orderingRect2D: Ordering[Rect2D] = (x: Rect2D, y: Rect2D) =>
@@ -65,12 +56,12 @@ package pdf {
   /**
     * `Pos` represents a position in the pdf.
     */
-  case class Pos(row: Float, col: Float)
+  case class Pos(x: Float, y: Float)
 
   object Pos {
     implicit val orderingPos: Ordering[Pos] = (a: Pos, b: Pos) =>
-      a.row compare b.row match {
-        case 0 => a.col compare b.col
+      a.y compare b.y match {
+        case 0 => a.x compare b.x
         case x => x
       }
   }

@@ -45,7 +45,7 @@ object RenoScalaCheckInstances {
     b match {
       case b: Pos =>
         val tolerance = 0.00001f
-        a.row === b.row +- tolerance && a.col === b.col +- tolerance
+        a.y === b.y +- tolerance && a.x === b.x +- tolerance
       case _ => false
     }
 }

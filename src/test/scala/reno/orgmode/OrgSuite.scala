@@ -1,11 +1,11 @@
-package reno.orgmode
+package reno
+package orgmode
 
 import org.scalatest.funsuite.AnyFunSuite
 import reno.pdf.{Mark, Pdf, Pos, Rect2D, TextMarkupAnnotation}
 import cats.data.{Chain, NonEmptyList, Writer}
 import cats.implicits._
 import io.chrisdavenport.log4cats.extras.{LogMessage, WriterLogger}
-import reno.RenoScalaCheckInstances
 
 class OrgSuite extends AnyFunSuite {
   type PureLogger[A] = Writer[Chain[LogMessage], A]

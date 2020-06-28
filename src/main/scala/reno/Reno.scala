@@ -8,7 +8,7 @@ import com.monovore.decline._
 import com.monovore.decline.effect._
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import reno.orgmode.Org
-import reno.pdf.Pdf
+import reno.pdf.{Pdf, TextMarkupAnnotation}
 
 object Reno
     extends CommandIOApp(
@@ -20,12 +20,16 @@ object Reno
   implicit def unsafeLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
 
   override def main: Opts[IO[ExitCode]] =
-    (dumpOpts orElse updateOpts)
+    (dumpOpts orElse updateOpts orElse debugShowOpts)
       .map {
-        case opts: Dump   => dump[IO](opts)
-        case opts: Update => update[IO](opts)
+        case opts: Dump      => dump[IO](opts)
+        case opts: Update    => update[IO](opts)
+        case opts: DebugShow => debugShow[IO](opts)
       }
-      .map(_.handleError(System.err.println).as(ExitCode.Success))
+      .map(_.handleErrorWith {
+        case e: RenoError => IO(System.err.println(e.toString))
+        case e            => IO(e.printStackTrace())
+      }.as(ExitCode.Success))
 
   /**
     * dump the annotations from the given pdf
@@ -39,7 +43,7 @@ object Reno
     for {
       _   <- canWrite(opts.org)
       _   <- orgIsNewOrCanOverwritten
-      pdf <- Pdf.fromPath(opts.pdf)
+      pdf <- Pdf.fromPath(opts.pdf, opts.pdfEngine, opts.markFrom)
       org = Org.fromPDF(pdf)
       _ <- org.save(opts.org)
     } yield ()
@@ -51,10 +55,23 @@ object Reno
   def update[F[_]: Sync](opts: Update): F[Unit] =
     for {
       _       <- canWrite(opts.dstOrg)
-      pdf     <- Pdf.fromPath(opts.pdf)
+      pdf     <- Pdf.fromPath(opts.pdf, opts.pdfEngine, opts.markFrom)
       org     <- Org.fromOrg(opts.srcOrg)
       updated <- org.update[F](pdf)
       _       <- updated.save(opts.dstOrg)
+    } yield ()
+
+  def debugShow[F[_]: Sync](opts: DebugShow): F[Unit] =
+    for {
+      pdf <- Pdf.fromPath(opts.pdf, opts.pdfEngine, opts.markFrom)
+
+      _ <- pdf.annotations.toList.traverse_ {
+        case TextMarkupAnnotation(pageNumber, mark, text) =>
+          Sync[F].delay {
+            println(s"Site: ${pageNumber} (${mark.id}@${mark.startPos})}")
+            println(s"$text\n")
+          }
+      }
     } yield ()
 
   /**

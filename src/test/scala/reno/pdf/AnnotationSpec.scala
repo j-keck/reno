@@ -20,10 +20,10 @@ object AnnotationSpec extends Properties("Annotation") {
       }
 
       // shift column
-      val a2 = shiftPos(a1, pos => pos.copy(col = pos.col + colOffset))
+      val a2 = shiftPos(a1, pos => pos.copy(x = pos.x + colOffset))
 
       // shift row
-      val a3 = shiftPos(a1, pos => pos.copy(row = pos.row + rowOffset))
+      val a3 = shiftPos(a1, pos => pos.copy(y = pos.y + rowOffset))
 
       // shift page
       val a4 = a1.copy(pageNumber = a1.pageNumber + pageOffset)

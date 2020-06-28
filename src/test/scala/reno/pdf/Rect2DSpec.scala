@@ -12,10 +12,10 @@ object Rect2DSpec extends Properties("Rect2D") {
 
   property("fromRectangle2D") = forAll(posNum[Float], posNum[Float], posNum[Float], posNum[Float]) { (x, y, w, h) =>
     val rect = Rect2D.fromRectangle2D(new Rectangle2D.Float(x, y, w, h))
-    ("leftBottom.col" |: rect.leftBottom.col === x) &&
-    ("leftBottom.row" |: rect.leftBottom.row === y) &&
-    ("rightTop.col" |: rect.rightTop.col === x + w) &&
-    ("rightTop.row" |: rect.rightTop.row === y + h)
+    ("leftBottom.col" |: rect.leftBottom.x === x) &&
+    ("leftBottom.row" |: rect.leftBottom.y === y) &&
+    ("rightTop.col" |: rect.rightTop.x === x + w) &&
+    ("rightTop.row" |: rect.rightTop.y === y + h)
   }
 
   property("toRectangle2D / fromRectangle2D") = forAll { rect: Rect2D =>

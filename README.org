@@ -1,1 +1,3 @@
+~reno~ extracts highlighted text from your pdf in an org-file.
+
 see the [[https://j-keck.github.io/reno][website]] for more information.
