@@ -35,7 +35,7 @@ if pkgs.lib.inNixShell then pkgs.mkShell rec {
 
   buildInputs = with pkgs; [
     idea.idea-community emacs
-    coursier sbt bloop ammonite
+    coursier sbt bloop ammonite jdk
     hugo
   ];
 
