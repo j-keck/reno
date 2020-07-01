@@ -1,0 +1,28 @@
+\documentclass{article}
+\usepackage[a4paper,hmargin=3cm,vmargin=5cm]{geometry}
+\usepackage{lscape}
+\usepackage{etoolbox}
+
+\makeatletter
+\def\ifGm@preamble#1{\@firstofone}
+\appto\restoregeometry{%
+  \pdfpagewidth=\paperwidth
+  \pdfpageheight=\paperheight}
+\apptocmd\newgeometry{%
+  \pdfpagewidth=\paperwidth
+  \pdfpageheight=\paperheight}{}{}
+\makeatother
+
+\begin{document}
+
+This is the first page  - orientation: portrait
+
+\newgeometry{,hmargin=3cm,vmargin=5cm,landscape}
+
+second - page orientation: landscape
+
+\restoregeometry
+
+orientation: portrait
+
+\end{document}

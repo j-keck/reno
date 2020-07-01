@@ -8,28 +8,28 @@ import org.scalatest.funsuite.AnyFunSuite
 import reno.pdf.Mark.From.{BoundingRect, Quads}
 import reno.pdf.PdfEngine.{IText, PDFBox}
 
-// FIXME: landscape doesn't work
 class PdfSuite extends AnyFunSuite {
   implicit def unsafeLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
 
-  val path = Option(getClass.getClassLoader.getResource("example-marked.pdf"))
+  val path = Option(getClass.getClassLoader.getResource("simple-marked.pdf"))
     .map(url => Paths.get(url.toURI))
     .getOrElse(fail("pdf not found"))
 
-  ignore("PDFBox / BoundingRect") {
-    assert(markedText(PDFBox, BoundingRect) === List("portrait", "landscape"))
+  test("PDFBox / BoundingRect") {
+    assert(markedText(PDFBox, BoundingRect) === List("portrait", "landscape", "portrait"))
   }
 
-  ignore("PDFBox / Quads") {
-    assert(markedText(PDFBox, Quads) === List("portrait", "landscape"))
+  test("PDFBox / Quads") {
+    assert(markedText(PDFBox, Quads) === List("portrait", "landscape", "portrait"))
   }
 
-  ignore("iText / BoundingRect") {
-    assert(markedText(IText, BoundingRect) === List("portrait", "landscape"))
+  test("iText / BoundingRect") {
+    assert(markedText(IText, BoundingRect) === List("portrait", "landscape", "portrait"))
   }
 
+  // FIXME: quads with itext
   ignore("iText / Quads") {
-    assert(markedText(IText, Quads) === List("portrait", "landscape"))
+    assert(markedText(IText, Quads) === List("portrait", "landscape", "portrait"))
   }
 
   def markedText(engine: PdfEngine, markFrom: Mark.From): List[String] = {
