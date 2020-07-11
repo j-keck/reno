@@ -67,6 +67,15 @@ object Parser {
             rest <- go(iter)
           } yield Note.src(src, ids) +: rest
 
+        // latex fragment
+        case Some(line) if hasOrgMarker(line, "\\begin{") =>
+          val id = line.dropWhile(_ != '{').tail.takeWhile(_ != '}')
+          for {
+            fragment <- takeBlock(iter, s"\\end{$id}")
+            ids      <- takeIds(iter)
+            rest     <- go(iter)
+          } yield Note.latexFragment(id, fragment, ids) +: rest
+
         // text
         case Some(line) =>
           for {

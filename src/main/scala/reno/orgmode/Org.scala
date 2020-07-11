@@ -3,11 +3,11 @@ package reno.orgmode
 import java.io.FileWriter
 import java.nio.file.Path
 
-import cats.Applicative
 import cats.effect.{Resource, Sync}
 import cats.implicits._
+import cats.Applicative
 import io.chrisdavenport.log4cats.Logger
-import reno.orgmode.NoteType.{Heading, Quote, Src, Text}
+import reno.orgmode.NoteType.{Heading, LatexFragment, Quote, Src, Text}
 import reno.pdf.{Annotations, Pdf, TextMarkupAnnotation}
 
 import scala.io.BufferedSource
@@ -22,7 +22,11 @@ case class Org(header: Header, notes: Notes) {
             case Heading | Text => note.text
             case Quote          => s"#+BEGIN_QUOTE\n${note.text}\n#+END_QUOTE"
             case Src            => s"#+BEGIN_SRC\n${note.text}\n#+END_SRC"
-
+            case LatexFragment(id) =>
+              s"""\\begin{$id}
+                 |${note.text}
+                 |\\end{$id}
+                 |""".stripMargin
           }
 
           val ids = if (note.ids.nonEmpty) note.ids.mkString(":RENO_MARKER_IDS:\n", "\n", "\n:END:\n") else ""
@@ -40,16 +44,17 @@ case class Org(header: Header, notes: Notes) {
     def go(notes: Notes, annotations: Annotations): F[Notes] =
       (notes, annotations) match {
 
-        // same id on both sides - skip all merged annotations
+        // same id on both sides
         case (n :: ns, a :: as) if n.ids.contains(a.mark.id) =>
           Logger[F].debug(s"unchanged ids: ${n.ids.mkString(", ")}") *> go(
             ns,
+            // skip all merged annotations
             as.dropWhile(a => n.ids.contains(a.mark.id))
           ).map(n +: _)
 
         // note without :reno_marker_id: reference - go with the note
         case (n :: ns, as) if n.ids.isEmpty =>
-          Logger[F].debug(s"keep free text: ${n.text.take(60).trim}...") *> go(ns, as).map(n +: _)
+          Logger[F].debug(s"keep free note: ${n.text.take(60).trim}...") *> go(ns, as).map(n +: _)
 
         // new annotation
         case (ns, a :: as) if !notes.flatMap(_.ids).contains(a.mark.id) =>
@@ -71,7 +76,6 @@ case class Org(header: Header, notes: Notes) {
           ).map(n.copy(ids = n.ids.filterNot(_ == n.ids.head)) +: _)
 
         case (ns, Nil) => Logger[F].debug("all annotations processed") *> ns.pure[F]
-
       }
 
     go(notes, pdf.annotations).map(notes => copy(notes = notes))

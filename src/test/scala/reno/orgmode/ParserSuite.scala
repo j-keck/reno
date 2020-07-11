@@ -4,7 +4,6 @@ import cats.data.{Chain, Writer}
 import cats.syntax.either._
 import io.chrisdavenport.log4cats.extras.{LogMessage, WriterLogger}
 import org.scalatest.funsuite.AnyFunSuite
-import reno.orgmode.Parser.ParserError
 
 import scala.collection.LinearSeq
 
@@ -49,6 +48,13 @@ class ParserSuite extends AnyFunSuite {
       |id-003
       |id-004
       |:end:
+      |
+      |\begin{align}
+      |a &= b
+      |\end{align}
+      |:reno_marker_ids:
+      |id-005
+      |:end:
       |""".stripMargin.linesIterator
 
     val expected = Org(
@@ -59,7 +65,8 @@ class ParserSuite extends AnyFunSuite {
         Note.text("plaintext\nover\nsome\nlines\n"),
         Note.quote("quote without ids"),
         Note.quote("quote with ids", Seq("id-002")),
-        Note.src("source with ids", Seq("id-003", "id-004"))
+        Note.src("source with ids", Seq("id-003", "id-004")),
+        Note.latexFragment("align", "a &= b", Seq("id-005"))
       )
     ).asRight
 
@@ -73,5 +80,4 @@ class ParserSuite extends AnyFunSuite {
       ).asLeft
     )
   }
-
 }
