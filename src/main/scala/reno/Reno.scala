@@ -20,11 +20,11 @@ object Reno
   implicit def unsafeLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
 
   override def main: Opts[IO[ExitCode]] =
-    (exportOpts orElse updateOpts orElse debugShowOpts)
+    (exportOpts orElse updateOpts orElse dumpOpts)
       .map {
-        case opts: Export    => export[IO](opts)
-        case opts: Update    => update[IO](opts)
-        case opts: DebugShow => debugShow[IO](opts)
+        case opts: Export => export[IO](opts)
+        case opts: Update => update[IO](opts)
+        case opts: Dump   => dump[IO](opts)
       }
       .map(_.handleErrorWith {
         case e => IO(System.err.println(RenoError.format(e)))
@@ -61,18 +61,28 @@ object Reno
       _       <- updated.save(opts.dstOrg)
     } yield ()
 
-  def debugShow[F[_]: Sync](opts: DebugShow): F[Unit] =
-    for {
-      pdf <- Pdf.fromPath(opts.pdf, opts.pdfEngine, opts.markFrom)
-
-      _ <- pdf.annotations.toList.traverse_ {
-        case TextMarkupAnnotation(pageNumber, mark, text) =>
-          Sync[F].delay {
-            println(s"Site: ${pageNumber} (${mark.id}@${mark.startPos})}")
-            println(s"$text\n")
+  def dump[F[_]: Sync](opts: Dump): F[Unit] =
+    opts match {
+      case Dump.DumpAnnotations(pdf, pdfEngine, markFrom) =>
+        for {
+          pdf <- Pdf.fromPath(pdf, pdfEngine, markFrom)
+          _ <- pdf.annotations.toList.traverse_ {
+            case TextMarkupAnnotation(pageNumber, mark, text) =>
+              Sync[F].delay {
+                println(s"Site: ${pageNumber} (${mark.id}@${mark.startPos})}")
+                println(s"$text\n")
+              }
           }
-      }
-    } yield ()
+        } yield ()
+
+      case Dump.DumpNotes(org) =>
+        for {
+          org <- Org.fromOrg(org)
+          _ <- org.notes.toList.traverse_ { note =>
+            Sync[F].delay(println(s"${note}"))
+          }
+        } yield ()
+    }
 
   /**
     * checks if the given path is writable

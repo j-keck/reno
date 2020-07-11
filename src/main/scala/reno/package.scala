@@ -12,12 +12,8 @@ package object reno {
       .subcommand("export", "Export the annotations from the given Pdf") {
         (
           Opts.flag(long = "overwrite", help = "Overwrite existing file", "f").orFalse,
-          Opts
-            .option[PdfEngine](long = "pdf-engine", s"Used pdf engine (itext / pdfbox)")
-            .withDefault(PdfEngine.IText),
-          Opts
-            .option[Mark.From](long = "mark-from", s"Extract mark from (boundingrect / quads)")
-            .withDefault(Mark.From.BoundingRect),
+          pdfEngineOpts,
+          markFromOpts,
           Opts.argument[Path](metavar = "pdf"),
           Opts.argument[Path](metavar = "org").orNone
         ).mapN {
@@ -29,12 +25,8 @@ package object reno {
   val updateOpts: Opts[Update] =
     Opts.subcommand("update", "update the notes in the Org-file with new annotations from the Pdf") {
       (
-        Opts
-          .option[PdfEngine](long = "pdf-engine", s"Used pdf engine (itext / pdfbox)")
-          .withDefault(PdfEngine.IText),
-        Opts
-          .option[Mark.From](long = "mark-from", s"Extract mark from (boundingrect / quads)")
-          .withDefault(Mark.From.BoundingRect),
+        pdfEngineOpts,
+        markFromOpts,
         Opts.argument[Path](metavar = "pdf"),
         Opts.argument[Path](metavar = "src-org").orNone,
         Opts.argument[Path](metavar = "dst-org").orNone
@@ -45,21 +37,29 @@ package object reno {
       }
     }
 
-  val debugShowOpts: Opts[DebugShow] =
-    Opts.subcommand("debug-show", "debug show each annotation with meta informations") {
-      (
-        Opts
-          .option[PdfEngine](long = "pdf-engine", s"Used pdf engine (itext / pdfbox)")
-          .withDefault(PdfEngine.IText),
-        Opts
-          .option[Mark.From](long = "mark-from", s"Extract mark from (boundingrect / quads)")
-          .withDefault(Mark.From.BoundingRect),
-        Opts.argument[Path](metavar = "pdf")
-      ).mapN {
-        case (pdfEngine, markFrom, pdf) =>
-          DebugShow(pdf, pdfEngine, markFrom)
-      }
+  val dumpOpts: Opts[Dump] =
+    Opts.subcommand("dump", "for debugging / inspection (run without arguments for the usage)") {
+      Opts.subcommand("annotations", "dump pdf annotations") {
+        (
+          pdfEngineOpts,
+          markFromOpts,
+          Opts.argument[Path](metavar = "pdf")
+        ).mapN {
+          case (pdfEngine, markFrom, pdf) => Dump.DumpAnnotations(pdf, pdfEngine, markFrom)
+        }
+      } orElse
+        Opts.subcommand("notes", "dump org notes") {
+          Opts.argument[Path](metavar = "org").map(Dump.DumpNotes.apply)
+        }
     }
+
+  lazy val pdfEngineOpts = Opts
+    .option[PdfEngine](long = "pdf-engine", s"Used pdf engine (itext / pdfbox)")
+    .withDefault(PdfEngine.IText)
+
+  lazy val markFromOpts = Opts
+    .option[Mark.From](long = "mark-from", s"Extract mark from (boundingrect / quads)")
+    .withDefault(Mark.From.BoundingRect)
 
   private def withBasenameSuffix(p: Path, suffix: String): Path =
     Paths.get(p.getFileName.toString.split('.') match {
@@ -70,15 +70,15 @@ package object reno {
 
 package reno {
 
-  import reno.pdf.Mark
-
   case class Export(pdf: Path, org: Path, overwriteExisting: Boolean, pdfEngine: PdfEngine, markFrom: Mark.From)
 
   case class Update(pdf: Path, srcOrg: Path, dstOrg: Path, pdfEngine: PdfEngine, markFrom: Mark.From)
 
-  case class DebugShow(pdf: Path, pdfEngine: PdfEngine, markFrom: Mark.From)
-
-  case class DebugMarker(srcPdf: Path, dstPdf: Path, pdfEngine: PdfEngine, markFrom: Mark.From)
+  sealed trait Dump
+  object Dump {
+    case class DumpAnnotations(pdf: Path, pdfEngine: PdfEngine, markFrom: Mark.From) extends Dump
+    case class DumpNotes(org: Path)                                                  extends Dump
+  }
 
   abstract class RenoError(msg: String) extends Throwable(msg)
 
