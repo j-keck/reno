@@ -7,9 +7,9 @@ import reno.pdf.{Mark, PdfEngine}
 
 package object reno {
 
-  val dumpOpts: Opts[Dump] =
+  val exportOpts: Opts[Export] =
     Opts
-      .subcommand("dump", "Dump the annotations from the given Pdf") {
+      .subcommand("export", "Export the annotations from the given Pdf") {
         (
           Opts.flag(long = "overwrite", help = "Overwrite existing file", "f").orFalse,
           Opts
@@ -22,7 +22,7 @@ package object reno {
           Opts.argument[Path](metavar = "org").orNone
         ).mapN {
           case (overwiteExisting, pdfEngine, markFrom, pdf, org) =>
-            Dump(pdf, org.getOrElse(withBasenameSuffix(pdf, "-notes.org")), overwiteExisting, pdfEngine, markFrom)
+            Export(pdf, org.getOrElse(withBasenameSuffix(pdf, "-notes.org")), overwiteExisting, pdfEngine, markFrom)
         }
       }
 
@@ -72,7 +72,7 @@ package reno {
 
   import reno.pdf.Mark
 
-  case class Dump(pdf: Path, org: Path, overwriteExisting: Boolean, pdfEngine: PdfEngine, markFrom: Mark.From)
+  case class Export(pdf: Path, org: Path, overwriteExisting: Boolean, pdfEngine: PdfEngine, markFrom: Mark.From)
 
   case class Update(pdf: Path, srcOrg: Path, dstOrg: Path, pdfEngine: PdfEngine, markFrom: Mark.From)
 

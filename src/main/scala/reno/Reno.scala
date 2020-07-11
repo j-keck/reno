@@ -20,9 +20,9 @@ object Reno
   implicit def unsafeLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
 
   override def main: Opts[IO[ExitCode]] =
-    (dumpOpts orElse updateOpts orElse debugShowOpts)
+    (exportOpts orElse updateOpts orElse debugShowOpts)
       .map {
-        case opts: Dump      => dump[IO](opts)
+        case opts: Export    => export[IO](opts)
         case opts: Update    => update[IO](opts)
         case opts: DebugShow => debugShow[IO](opts)
       }
@@ -32,9 +32,9 @@ object Reno
         .as(ExitCode.Success))
 
   /**
-    * dump the annotations from the given pdf
+    * export the annotations from the given pdf
     */
-  def dump[F[_]: Sync](opts: Dump): F[Unit] = {
+  def export[F[_]: Sync](opts: Export): F[Unit] = {
     val orgIsNewOrCanOverwritten: F[Unit] =
       if (opts.org.toFile.exists() && !opts.overwriteExisting)
         Sync[F].raiseError(InvalidArgumentError(s"target file exists - use '-f' to override it"))
