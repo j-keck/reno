@@ -31,4 +31,7 @@ package orgmode {
     case object Src     extends NoteType
     case object Text    extends NoteType
   }
+
+  case class ParserError(msg: String)    extends RenoError(msg)
+  case class UpdateOrgError(msg: String) extends RenoError(msg)
 }

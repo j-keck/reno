@@ -80,11 +80,13 @@ package reno {
 
   case class DebugMarker(srcPdf: Path, dstPdf: Path, pdfEngine: PdfEngine, markFrom: Mark.From)
 
-  abstract class RenoError(msg: String) extends Throwable(msg) {
-    override def toString: String =
-      s"${getClass.getSimpleName} - ${msg}\n${humanReadableCallStack(2)}"
+  abstract class RenoError(msg: String) extends Throwable(msg)
 
-    def humanReadableCallStack(indent: Int = 0): String = {
+  object RenoError {
+    def format(t: Throwable): String =
+      s"${t.getClass.getSimpleName} - ${t.getMessage}\n${humanReadableCallStack(t, 2)}"
+
+    def humanReadableCallStack(t: Throwable, indent: Int = 0): String = {
       def formatStackTrace(trace: Array[StackTraceElement]) =
         trace
           .map(s => s".${s.getMethodName}(${s.getFileName}:${s.getLineNumber})")
@@ -93,8 +95,8 @@ package reno {
       val rootPackageName = getClass.getPackage.getName.takeWhile(_ != '.')
 
       formatStackTrace(
-        super.getStackTrace
-          .takeWhile(_.getClassName.startsWith(rootPackageName))
+        t.getStackTrace
+          .filter(_.getClassName.startsWith(rootPackageName))
       )
     }
   }

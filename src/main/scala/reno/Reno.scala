@@ -27,9 +27,9 @@ object Reno
         case opts: DebugShow => debugShow[IO](opts)
       }
       .map(_.handleErrorWith {
-        case e: RenoError => IO(System.err.println(e.toString))
-        case e            => IO(e.printStackTrace())
-      }.as(ExitCode.Success))
+        case e => IO(System.err.println(RenoError.format(e)))
+      }
+        .as(ExitCode.Success))
 
   /**
     * dump the annotations from the given pdf

@@ -4,15 +4,12 @@ import cats.{Applicative, Monad}
 import cats.data.EitherT
 import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
-import reno.RenoError
 
 import scala.collection.LinearSeq
 
 object Parser {
 
   type ParseResult[A] = Either[ParserError, A]
-
-  case class ParserError(msg: String) extends RenoError(msg)
 
   def parse[F[_]: Monad: Logger](iterableOnce: IterableOnce[String]): F[ParseResult[Org]] = {
     val iter = SavepointIterator.fromIterableOnce(iterableOnce)
