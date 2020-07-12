@@ -80,4 +80,20 @@ class ParserSuite extends AnyFunSuite {
       ).asLeft
     )
   }
+
+  test("takeBlock") {
+    val Right((block, rest)) =
+      Parser.takeBlock(List("start", "text1", "text2", "end", "text3"), "start", "end")
+    assert(block === List("text1", "text2"))
+    assert(rest === List("text3"))
+
+    assert(Parser.takeBlock(Nil, "start", "end").isLeft)
+  }
+
+  test("takeIds") {
+    val Right((ids, rest)) = Parser.takeIds(List("  ", "  ", ":reno_marker_ids:", "id01", "id02", ":end:", "text"))
+    assert(ids === List("id01", "id02"))
+    assert(rest === List("text"))
+  }
+
 }

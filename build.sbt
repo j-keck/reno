@@ -83,7 +83,8 @@ lazy val root = (project in file("."))
       val os  = System.getProperty("os.name")
       log.warn(s"native-image options on '${os}': ${options.mkString(" ")}")
       options
-    }
+    },
+    addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
   )
 
 def noFatalWarnings =

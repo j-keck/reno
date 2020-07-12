@@ -12,136 +12,140 @@ object Parser {
   type ParseResult[A] = Either[ParserError, A]
 
   def parse[F[_]: Monad: Logger](iterableOnce: IterableOnce[String]): F[ParseResult[Org]] = {
-    val iter = SavepointIterator.fromIterableOnce(iterableOnce)
+    val xs = iterableOnce.iterator.to(List)
     (for {
-      header <- EitherT(parseHeader[F](iter))
-      notes  <- EitherT(parseNotes[F](iter))
+      (header, xs) <- EitherT(parseHeader[F](xs))
+      (notes, _)   <- EitherT(parseNotes[F](xs))
     } yield Org(header, notes)).value
   }
 
-  private def parseHeader[F[_]: Applicative](iter: SavepointIterator[String]): F[ParseResult[Header]] = {
-    def go(iter: SavepointIterator[String]): ParseResult[Header] =
-      iter.nextOption() match {
+  private def parseHeader[F[_]: Applicative](xs: List[String]): F[ParseResult[(Header, List[String])]] = {
+    def go(xs: List[String]): ParseResult[(Header, List[String])] =
+      xs.headOption match {
         // FIXME: this is very hacky and unsafe!
         case Some(line) if hasOrgMarker(line, "#+") && line.contains(":") =>
-          iter.savepoint()
           val Array(key, value) = line.split(":", 2)
-          go(iter).map((key.replaceFirst("\\s*#\\+\\s*", "") -> value.trim) +: _)
-        case _ =>
-          iter.rollback()
-          Nil.asRight
+          go(xs.tail).map {
+            case (headers, xs) =>
+              ((key.replaceFirst("\\s*#\\+\\s*", "") -> value.trim) +: headers, xs)
+          }
+        case _ => (Nil, xs).asRight
       }
 
-    iter.savepoint()
-    go(iter).pure[F]
+    go(xs).pure[F]
   }
 
-  private def parseNotes[F[_]: Applicative](iter: SavepointIterator[String]): F[ParseResult[Notes]] = {
+  private def parseNotes[F[_]: Applicative](xs: List[String]): F[ParseResult[(Notes, List[String])]] = {
 
-    def go(iter: SavepointIterator[String]): ParseResult[Notes] = {
-      iter.nextOption() match {
+    def go(xs: List[String]): ParseResult[(Notes, List[String])] = {
+      xs.headOption match {
 
         // skip blank lines
-        case Some(line) if line.trim.isEmpty => go(iter)
+        case Some(line) if line.trim.isEmpty => go(xs.tail)
 
         // header
         case Some(line) if hasOrgMarker(line, "*") =>
           for {
-            ids  <- takeIds(iter)
-            rest <- go(iter)
-          } yield Note.heading(line, ids) +: rest
+            (ids, xs)  <- takeIds(xs.tail)
+            (rest, xs) <- go(xs)
+          } yield (Note.heading(line, ids) +: rest, xs)
 
         // quote blocks
         case Some(line) if hasOrgMarker(line, "#+begin_quote") =>
           for {
-            quote <- takeBlock(iter, "#+end_quote")
-            ids   <- takeIds(iter)
-            rest  <- go(iter)
-          } yield Note.quote(quote, ids) +: rest
+            (quote, xs) <- takeBlock(xs, "#+begin_quote", "#+end_quote")
+            (ids, xs)   <- takeIds(xs)
+            (rest, xs)  <- go(xs)
+          } yield (Note.quote(quote.mkString("\n"), ids) +: rest, xs)
 
         // source blocks
         case Some(line) if hasOrgMarker(line, "#+begin_src") =>
           for {
-            src  <- takeBlock(iter, "#+end_src")
-            ids  <- takeIds(iter)
-            rest <- go(iter)
-          } yield Note.src(src, ids) +: rest
+            (src, xs)  <- takeBlock(xs, "#+begin_src", "#+end_src")
+            (ids, xs)  <- takeIds(xs)
+            (rest, xs) <- go(xs)
+          } yield (Note.src(src.mkString("\n"), ids) +: rest, xs)
 
         // latex fragment
         case Some(line) if hasOrgMarker(line, "\\begin{") =>
           val id = line.dropWhile(_ != '{').tail.takeWhile(_ != '}')
           for {
-            fragment <- takeBlock(iter, s"\\end{$id}")
-            ids      <- takeIds(iter)
-            rest     <- go(iter)
-          } yield Note.latexFragment(id, fragment, ids) +: rest
+            (fragment, xs) <- takeBlock(xs, s"\\begin{$id}", s"\\end{$id}")
+            (ids, xs)      <- takeIds(xs)
+            (rest, xs)     <- go(xs)
+          } yield (Note.latexFragment(id, fragment.mkString("\n"), ids) +: rest, xs)
 
         // text
-        case Some(line) =>
+        case Some(_) =>
           for {
-            text <- takeText(iter)
-            ids  <- takeIds(iter)
-            rest <- go(iter)
-          } yield Note.text(line + "\n" + text, ids) +: rest
+            (text, xs) <- takeText(xs)
+            (ids, xs)  <- takeIds(xs)
+            (rest, xs) <- go(xs)
+          } yield (Note.text(text.mkString("\n"), ids) +: rest, xs)
 
-        case None => LinearSeq.empty.asRight
+        case None => (LinearSeq.empty, xs).asRight
       }
     }
 
-    go(iter).pure[F]
+    go(xs).pure[F]
   }
 
   private def hasOrgMarker(s: String, prefix: String) = s.trim.toLowerCase.startsWith(prefix.toLowerCase())
 
-  private def takeBlock(iter: SavepointIterator[String], marker: String): ParseResult[String] = {
-    def go(iter: SavepointIterator[String]): ParseResult[Seq[String]] =
-      iter.nextOption() match {
-        case Some(line) if hasOrgMarker(line, marker) => Seq.empty[String].asRight
-        case Some(line)                               => go(iter).map(line +: _)
-        case None                                     => ParserError(s"End marker: '$marker' not found").asLeft[Seq[String]]
+  private[reno] def takeBlock(
+      xs: List[String],
+      start: String,
+      end: String
+  ): ParseResult[(Seq[String], List[String])] = {
+    def go(xs: List[String]): ParseResult[(Seq[String], List[String])] =
+      xs.headOption match {
+        case Some(line) if hasOrgMarker(line, end) => (Seq.empty[String], xs.tail).asRight
+        case Some(line)                            => go(xs.tail).map { case (rest, xs) => (line +: rest, xs) }
+        case None                                  => ParserError(s"End marker: '$end' not found").asLeft
       }
 
-    go(iter).map(_.mkString("\n"))
+    if (xs.headOption.map(_.equalsIgnoreCase(start)).getOrElse(false))
+      go(xs.tail)
+    else
+      ParserError(s"Start marker: '$start' not found - headOption: ${xs.headOption}").asLeft
   }
 
-  private def takeIds(iter: SavepointIterator[String]): ParseResult[Seq[String]] = {
-    @scala.annotation.tailrec
-    def go(iter: SavepointIterator[String]): Seq[String] =
-      iter.nextOption() match {
+  private[reno] def takeIds(origList: List[String]): ParseResult[(Seq[String], List[String])] = {
+    def go(xs: List[String]): (Seq[String], List[String]) =
+      xs.headOption match {
         // skip empty lines
-        case Some(line) if line.trim.isEmpty => go(iter)
+        case Some(line) if line.trim.isEmpty => go(xs.tail)
 
         // check if there is a drawer with mark id's
         case Some(line) if hasOrgMarker(line, ":reno_marker_ids:") =>
           // take all lines until the end mark
-          iter.iterator.takeWhile(!hasOrgMarker(_, ":end:")).to(Seq)
+          val ids = xs.tail.takeWhile(!hasOrgMarker(_, ":end:"))
+          (ids.to(Seq), xs.dropWhile(!hasOrgMarker(_, ":end")).tail)
 
         case _ =>
-          // no drawer with mark id's found - rollback the iterator
-          iter.rollback()
-          Seq.empty
+          // no drawer with mark id's found - return the original List
+          (Seq.empty, origList)
       }
 
-    iter.savepoint()
-    go(iter).asRight
+    go(origList).asRight
   }
 
-  private def takeText(iter: SavepointIterator[String]): ParseResult[String] = {
-    def go(iter: SavepointIterator[String]): ParseResult[Seq[String]] = {
-      iter.savepoint()
-      iter.nextOption() match {
-        case Some(line) if Seq("*", "#+begin_quote", "#+begin_src").exists(hasOrgMarker(line, _)) =>
-          // rollback to the savepoint to keep the marker line intact
-          iter.rollback()
-          Seq.empty[String].asRight
+  private def takeText(xs: List[String]): ParseResult[(Seq[String], List[String])] = {
+    def go(xs: List[String]): ParseResult[(Seq[String], List[String])] = {
+      xs.headOption match {
+        case Some(line) if Seq("*", "#+begin_quote", "#+begin_src", "\\begin{").exists(hasOrgMarker(line, _)) =>
+          // use the full List to keep the marker line intact
+          (Seq.empty, xs).asRight
         case Some(line) =>
-          go(iter).map(line +: _)
-        case None =>
-          Seq.empty[String].asRight
+          go(xs.tail).map {
+            case (lines, xs) =>
+              (line +: lines, xs)
+          }
+        case None => (Seq.empty, xs).asRight
       }
     }
 
-    go(iter).map(_.mkString("\n"))
+    go(xs)
   }
 
 }
