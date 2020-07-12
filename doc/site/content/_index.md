@@ -8,19 +8,15 @@ weight = 10
 
 `reno` extracts highlighted text from your pdf in an org-file.
 
+The highlighted text will be placed in a `#+BEGIN_QUOTE` / `#+END_QUOTE` block
+with a drawer with the id's from extracted text.
+
+To update your notes and include new highlighted text, use the `update` subcommand.
+This will insert new highlighted text in right position.
+
+You can merge blocks or change the exported block to headings, source blocks, plain text or latex fragments.
+When you keep the drawer with the id's, `reno` will recognize this blocks and keep it intact when you update your notes.
+
 {{< hint warning >}}
 ****This project is in a early state!****
-
-Currently i test different pdf-engines (itext / pdfbox) and how
-to extract marked text (per bounded-rect / quads).
-
-PDFBox gives better results, but doesn't work with `native-image` ([PDFBOX-4548](https://issues.apache.org/jira/browse/PDFBOX-4548)).
 {{< /hint >}}
-
-The highlighted text will be placed in a `#+BEGIN_QUOTE` / `#+END_QUOTE` block
-and a drawer with the id's from extracted text.
-
-You can later run an update and `reno` will recognize the exported blocks and
-don't export it a second time / insert new highlighted text in right position.
-
-Other text, headings, quotes and src blocks will keep intact.

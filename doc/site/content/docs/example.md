@@ -7,7 +7,7 @@ weight = 40
 
 ## Reading notes {#reading-notes}
 
-I use `reno` to add some reading notes:
+I use `reno` to create reading notes.
 
 From this marked PDF Document:
 
@@ -24,16 +24,16 @@ where i can
 -   add some notes for me
 
 
-## Play with code {#play-with-code}
+## Play with source code {#play-with-source-code}
 
 I can mark some challenges:
 
 {{< figure src="/market-challenges.png" >}}
 
-include some org-babel source blocks to solve the challenges:
+and pack the source code in `#+begin_src` and `#+end_src` blocks to evaluate it with org-babel.
 
 {{< figure src="/market-challenges-notes-org.png" >}}
 
-and export it from Emacs as Pdf to read it later again:
+Later i can export the notes from Emacs to a Pdf file to read it later again:
 
 {{< figure src="/market-challenges-notes-pdf.png" >}}

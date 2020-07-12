@@ -18,22 +18,18 @@
 
 ~reno~ extracts highlighted text from your pdf in an org-file.
 
+The highlighted text will be placed in a ~#+BEGIN_QUOTE~ / ~#+END_QUOTE~ block
+with a drawer with the id's from extracted text.
+
+To update your notes and include new highlighted text, use the ~update~ subcommand.
+This will insert new highlighted text in right position.
+
+You can merge blocks or change the exported block to headings, source blocks, plain text or latex fragments.
+When you keep the drawer with the id's, ~reno~ will recognize this blocks and keep it intact when you update your notes.
+
 {{< hint warning >}}
 **This project is in a early state!**
-
-Currently i test different pdf-engines (itext / pdfbox) and how
-to extract marked text (per bounded-rect / quads).
-
-PDFBox gives better results, but doesn't work with ~native-image~ ([[https://issues.apache.org/jira/browse/PDFBOX-4548][PDFBOX-4548]]).
 {{< /hint >}}
-
-The highlighted text will be placed in a ~#+BEGIN_QUOTE~ / ~#+END_QUOTE~ block
-and a drawer with the id's from extracted text.
-
-You can later run an update and ~reno~ will recognize the exported blocks and
-don't export it a second time / insert new highlighted text in right position.
-
-Other text, headings, quotes and src blocks will keep intact.
 
 
 * Installation
@@ -42,7 +38,6 @@ Other text, headings, quotes and src blocks will keep intact.
   :export_hugo_weight: 20
   :export_hugo_section: docs
   :END:
-
 
 ** Binary packages
 
@@ -70,6 +65,12 @@ You can download the latest binary package from **here** or from the [[https://g
  #+END_SRC
 
 
+{{< hint warning >}}
+The ~--pdf-backend pdfbox~ flag gives better results, but doesn't work with ~native-image~ ([[https://issues.apache.org/jira/browse/PDFBOX-4548][see PDFBOX-4548]]).
+
+So if you would use the [[https://pdfbox.apache.org/][PDFBox]] backend, use the "Generic (Java)" version.
+{{< /hint >}}
+
 
 * Usage
   :PROPERTIES:
@@ -81,40 +82,65 @@ You can download the latest binary package from **here** or from the [[https://g
 ** Usage
 
  #+BEGIN_EXAMPLE
- Usage:
-     reno dump
-     reno update
-     reno debug-show
+main⟩ reno --help
+Usage:
+    reno export
+    reno update
+    reno dump
 
- reading notes extractor
+reading notes extractor
 
- Options and flags:
-     --help
-         Display this help text.
-     --version, -v
-         Print the version number and exit.
+Options and flags:
+    --help
+        Display this help text.
+    --version, -v
+        Print the version number and exit.
 
- Subcommands:
-     dump
-         Dump the annotations from the given Pdf
-     update
-         update the notes in the Org-file with new annotations from the Pdf
-     debug-show
-         debug show each annotation with meta informations
+Subcommands:
+    export
+        Export the annotations from the given Pdf
+    update
+        update the notes in the Org-file with new annotations from the Pdf
+    dump
+        for debugging / inspection (run without arguments for the usage)
  #+END_EXAMPLE
 
-** Dump annotations to an org-file
+** Export annotations to an org-file
+
+Use the ~export~ subcommand to export your annotations.
 
 #+BEGIN_EXAMPLE
-Usage: reno dump [--overwrite] [--pdf-engine <value>] [--mark-from <value>] <pdf> [<org>]
+main⟩ reno export
+Usage: reno export [--overwrite] [--pdf-engine <value>] [--mark-from <value>] <pdf> [<org>]
 
-Dump the annotations from the given Pdf
+Export the annotations from the given Pdf
 
 Options and flags:
     --help
         Display this help text.
     --overwrite, -f
         Overwrite existing file
+    --pdf-engine <value>
+        Used pdf engine (itext / pdfbox)
+    --mark-from <value>
+        Extract mark from (boundingrect / quads)
+
+#+END_EXAMPLE
+
+
+** Update new annotations
+
+To update your org-file and include new annotations from your pdf, use the ~update~ subcommand.
+
+#+BEGIN_EXAMPLE
+main⟩ reno update
+Usage: reno update [--pdf-engine <value>] [--mark-from <value>] <pdf> [<src-org>] [<dst-org>]
+
+update the notes in the Org-file with new annotations from the Pdf
+
+Options and flags:
+    --help
+        Display this help text.
     --pdf-engine <value>
         Used pdf engine (itext / pdfbox)
     --mark-from <value>
@@ -129,7 +155,7 @@ Options and flags:
   :END:
 
 ** Reading notes
-I use ~reno~ to add some reading notes:
+I use ~reno~ to create reading notes.
 
 From this marked PDF Document:
 
@@ -146,21 +172,20 @@ where i can
  - add some notes for me
 
 
-** Play with code
+** Play with source code
 
 I can mark some challenges:
 
 [[/market-challenges.png]]
 
 
-
-include some org-babel source blocks to solve the challenges:
+and pack the source code in ~#+begin_src~ and ~#+end_src~ blocks to evaluate it with org-babel.
 
 [[/market-challenges-notes-org.png]]
 
 
 
-and export it from Emacs as Pdf to read it later again:
+Later i can export the notes from Emacs to a Pdf file to read it later again:
 
 [[/market-challenges-notes-pdf.png]]
 
