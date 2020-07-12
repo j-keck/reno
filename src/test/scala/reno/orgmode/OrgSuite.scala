@@ -20,16 +20,15 @@ class OrgSuite extends AnyFunSuite {
       )
     )
 
-    val (logs, updated) = org
+    val updated = org
       .update[PureLogger](
         mkPDFWithAnnotations(
           ("text01", "id01"),
           ("text02", "id02")
         )
       )
-      .run
+      .value
 
-    assert(logs.count(_.message.contains("unchanged")) == 2L)
     assert(updated === org)
   }
 
@@ -68,7 +67,7 @@ class OrgSuite extends AnyFunSuite {
       )
     )
 
-    val updated = org
+    val (_, updated) = org
       .update[PureLogger](
         mkPDFWithAnnotations(
           ("text01", "id01"),
@@ -77,10 +76,21 @@ class OrgSuite extends AnyFunSuite {
           ("after text02", "new-id02")
         )
       )
-      .value
+      .run
 
     assert(
       updated.notes.map(_.text) === Seq("text01", "free-text", "after free-text", "text02", "after text02")
+    )
+  }
+
+  test("update - annotations removed") {
+    val org            = Org(List.empty, mkNotes(("text01", Seq("id01")), ("text02", Seq("id02")), ("text03", Seq("id03"))))
+    val (log, updated) = org.update[PureLogger](mkPDFWithAnnotations(("text02", "id02"))).run
+
+    println(log)
+
+    assert(
+      updated.notes == mkNotes(("text01", Seq.empty), ("text02", Seq("id02")), ("text03", Seq.empty))
     )
   }
 

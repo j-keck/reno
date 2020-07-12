@@ -3,13 +3,14 @@ package reno.orgmode
 import java.io.FileWriter
 import java.nio.file.Path
 
+import cats.Applicative
 import cats.effect.{Resource, Sync}
 import cats.implicits._
-import cats.Applicative
 import io.chrisdavenport.log4cats.Logger
-import reno.orgmode.NoteType.{Heading, LatexFragment, Quote, Src, Text}
-import reno.pdf.{Annotations, Pdf, TextMarkupAnnotation}
+import reno.orgmode.NoteType._
+import reno.pdf.{Annotation, Pdf, TextMarkupAnnotation}
 
+import scala.collection.LinearSeq
 import scala.io.BufferedSource
 
 case class Org(header: Header, notes: Notes) {
@@ -41,44 +42,53 @@ case class Org(header: Header, notes: Notes) {
       Resource.fromAutoCloseable(Sync[F].delay(new FileWriter(path.toFile))).use(fw => Sync[F].delay(fw.write(text)))
 
   def update[F[_]: Applicative: Logger](pdf: Pdf): F[Org] = {
-    def go(notes: Notes, annotations: Annotations): F[Notes] =
+    def go(notes: Option[Zipper[Note]], annotations: Option[Zipper[Annotation]]): F[Notes] =
       (notes, annotations) match {
+        // note without :reno_marker_id: reference - take it
+        case (Some(ns), _) if ns.focus.ids.isEmpty =>
+          Logger[F].debug(s"free text note (note-idx: ${ns.idx})") *>
+            go(ns.next, annotations).map(ns.focus +: _)
 
-        // same id on both sides
-        case (n :: ns, a :: as) if n.ids.contains(a.mark.id) =>
-          Logger[F].debug(s"unchanged ids: ${n.ids.mkString(", ")}") *> go(
-            ns,
-            // skip all merged annotations
-            as.dropWhile(a => n.ids.contains(a.mark.id))
-          ).map(n +: _)
+        // note has a reference to the annotation - take it and proceed
+        case (Some(ns), Some(as)) if ns.focus.ids.contains(as.focus.mark.id) =>
+          Logger[F].debug(s"note from annotation (note-idx: ${ns.idx}, annotation-idx: ${as.idx})") *>
+            go(ns.next, as.nextWhile(a => ns.focus.ids.contains(a.mark.id))).map(ns.focus +: _)
 
-        // note without :reno_marker_id: reference - go with the note
-        case (n :: ns, as) if n.ids.isEmpty =>
-          Logger[F].debug(s"keep free note: ${n.text.take(60).trim}...") *> go(ns, as).map(n +: _)
-
-        // new annotation
-        case (ns, a :: as) if !notes.flatMap(_.ids).contains(a.mark.id) =>
-          Logger[F].debug(s"found new annotation with id: ${a.mark.id}") *>
-            go(ns, as).map(
-              // NOTE: this will change when more annotations are supported
-              (a match {
+        // must be a new annotation - take it
+        case (Some(ns), Some(as)) if !ns.exists(_.ids.contains(as.focus.mark.id)) =>
+          Logger[F].debug(s"new annotation (annotation-idx: ${as.idx}") *>
+            go(notes, as.next).map { rest =>
+              val note = (as.focus match {
                 case a: TextMarkupAnnotation => Note.quote(a.text, Seq(a.mark.id))
-              }) +: _
-            )
+              })
+              note +: rest
+            }
 
-        // annotation removed
-        case (n :: ns, as) =>
-          // `n.ids.head` is save, because notes without any id's are already processed
+        // annotation must be removed - remove the reference from the actual note
+        case (Some(ns), _) =>
           Logger[F]
-            .info(s"no reference to note '${n.ids.head}' found - keep the note but remove the attached id") *> go(
-            ns,
-            as
-          ).map(n.copy(ids = n.ids.filterNot(_ == n.ids.head)) +: _)
+            .info(
+              s"annotation removed - (note-idx: ${ns.idx})"
+            ) *>
+            go(ns.next, annotations).map(ns.focus.copy(ids = ns.focus.ids.tail) +: _)
 
-        case (ns, Nil) => Logger[F].debug("all annotations processed") *> ns.pure[F]
+        // all notes processed - continue with the remaining annotations
+        case (None, Some(as)) =>
+          Logger[F].debug(s"notes processed - new annotation (annotation-idx: ${as.idx}") *>
+            go(notes, as.next).map { rest =>
+              val note = (as.focus match {
+                case a: TextMarkupAnnotation => Note.quote(a.text, Seq(a.mark.id))
+              })
+              note +: rest
+            }
+
+        // everything processed - done
+        case (None, None) =>
+          Logger[F].debug("everything processed") *> LinearSeq.empty.pure[F]
+
       }
 
-    go(notes, pdf.annotations).map(notes => copy(notes = notes))
+    go(Zipper.fromLinearSeq(notes), Zipper.fromLinearSeq(pdf.annotations)).map(notes => copy(notes = notes))
   }
 }
 
