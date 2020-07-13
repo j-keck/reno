@@ -43,52 +43,54 @@ case class Org(header: Header, notes: Notes) {
 
   def update[F[_]: Applicative: Logger](pdf: Pdf): F[Org] = {
     def go(notes: Option[Zipper[Note]], annotations: Option[Zipper[Annotation]]): F[Notes] =
-      (notes, annotations) match {
-        // note without :reno_marker_id: reference - take it
-        case (Some(ns), _) if ns.focus.ids.isEmpty =>
-          Logger[F].debug(s"free text note (note-idx: ${ns.idx})") *>
-            go(ns.next, annotations).map(ns.focus +: _)
+      Logger[F].trace(s"go - note:${notes.map(_.focus)}, annotation:${annotations.map(_.focus)}") *>
+        ((notes, annotations) match {
+          // note without :reno_marker_id: reference - take it
+          case (Some(ns), _) if ns.focus.ids.isEmpty =>
+            Logger[F].debug(s"free text note (note-idx: ${ns.idx})") *>
+              go(ns.next, annotations).map(ns.focus +: _)
 
-        // note has a reference to the annotation - take it and proceed
-        case (Some(ns), Some(as)) if ns.focus.ids.contains(as.focus.mark.id) =>
-          Logger[F].debug(s"note from annotation (note-idx: ${ns.idx}, annotation-idx: ${as.idx})") *>
-            go(ns.next, as.nextWhile(a => ns.focus.ids.contains(a.mark.id))).map(ns.focus +: _)
+          // note has a reference to the annotation - take it and proceed
+          case (Some(ns), Some(as)) if ns.focus.ids.contains(as.focus.mark.id) =>
+            Logger[F].debug(s"note from annotation (note-idx: ${ns.idx}, annotation-idx: ${as.idx})") *>
+              go(ns.next, as.nextWhile(a => ns.focus.ids.contains(a.mark.id))).map(ns.focus +: _)
 
-        // must be a new annotation - take it
-        case (Some(ns), Some(as)) if !ns.exists(_.ids.contains(as.focus.mark.id)) =>
-          Logger[F].debug(s"new annotation (annotation-idx: ${as.idx}") *>
-            go(notes, as.next).map { rest =>
-              val note = (as.focus match {
-                case a: TextMarkupAnnotation => Note.quote(a.text, Seq(a.mark.id))
-              })
-              note +: rest
-            }
+          // must be a new annotation - take it
+          case (Some(ns), Some(as)) if !ns.exists(_.ids.contains(as.focus.mark.id)) =>
+            Logger[F].debug(s"new annotation (annotation-idx: ${as.idx}") *>
+              go(notes, as.next).map { rest =>
+                val note = (as.focus match {
+                  case a: TextMarkupAnnotation => Note.quote(a.text, Seq(a.mark.id))
+                })
+                note +: rest
+              }
 
-        // annotation must be removed - remove the reference from the actual note
-        case (Some(ns), _) =>
-          Logger[F]
-            .info(
-              s"annotation removed - (note-idx: ${ns.idx})"
-            ) *>
-            go(ns.next, annotations).map(ns.focus.copy(ids = ns.focus.ids.tail) +: _)
+          // annotation must be removed - remove the reference from the actual note
+          case (Some(ns), _) =>
+            Logger[F]
+              .info(
+                s"annotation removed - (note-idx: ${ns.idx})"
+              ) *>
+              go(ns.next, annotations).map(ns.focus.copy(ids = ns.focus.ids.tail) +: _)
 
-        // all notes processed - continue with the remaining annotations
-        case (None, Some(as)) =>
-          Logger[F].debug(s"notes processed - new annotation (annotation-idx: ${as.idx}") *>
-            go(notes, as.next).map { rest =>
-              val note = (as.focus match {
-                case a: TextMarkupAnnotation => Note.quote(a.text, Seq(a.mark.id))
-              })
-              note +: rest
-            }
+          // all notes processed - continue with the remaining annotations
+          case (None, Some(as)) =>
+            Logger[F].debug(s"notes processed - new annotation (annotation-idx: ${as.idx}") *>
+              go(notes, as.next).map { rest =>
+                val note = (as.focus match {
+                  case a: TextMarkupAnnotation => Note.quote(a.text, Seq(a.mark.id))
+                })
+                note +: rest
+              }
 
-        // everything processed - done
-        case (None, None) =>
-          Logger[F].debug("everything processed") *> LinearSeq.empty.pure[F]
+          // everything processed - done
+          case (None, None) =>
+            Logger[F].debug("everything processed") *> LinearSeq.empty.pure[F]
 
-      }
+        })
 
-    go(Zipper.fromLinearSeq(notes), Zipper.fromLinearSeq(pdf.annotations)).map(notes => copy(notes = notes))
+    // FIXME: why does `Zipper.fromLinearSeq(pdf.annotations)` compile?!?!
+    go(Zipper.fromLinearSeq(notes), Zipper.fromLinearSeq(pdf.annotations.toList)).map(notes => copy(notes = notes))
   }
 }
 

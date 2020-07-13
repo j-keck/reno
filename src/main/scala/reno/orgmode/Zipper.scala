@@ -64,8 +64,8 @@ object Zipper {
 
   def fromLinearSeq[A](seq: LinearSeq[A]): Option[Zipper[A]] =
     seq match {
-      case f :: right => Zipper(LinearSeq.empty, f, right).some
-      case _          => none
+      case a :: as => Zipper(LinearSeq.empty, a, as).some
+      case _       => none
     }
 
   def fromIterableOnce[A](iter: IterableOnce[A]): Option[Zipper[A]] =
