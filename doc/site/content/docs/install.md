@@ -11,15 +11,15 @@ You can download the latest binary package from ****here**** or from the [GitHub
 
 {{<tabs "install">}}
 {{< tab "Linux (x64)" >}}
-  1.) ****Download**** the latest version: [reno-linux-x64.zip](https://github.com/j-keck/reno/releases/download/v0.3.0/reno-linux-x64.zip)
+  1.) ****Download**** the latest version: [reno-linux-x64.zip](https://github.com/j-keck/reno/releases/download/v0.3.1/reno-linux-x64.zip)
 
   2.) Run it:  `./reno`
 {{< /tab >}}
 
 {{< tab "Generic (Java)" >}}
-  1.) ****Download**** the latest version: [reno-0.3.0.jar](https://github.com/j-keck/reno/releases/download/v0.3.0/reno-0.3.0.jar)
+  1.) ****Download**** the latest version: [reno-0.3.1.jar](https://github.com/j-keck/reno/releases/download/v0.3.1/reno-0.3.1.jar)
 
-  2.) Run it:  `java -jar reno-0.3.0.jar`
+  2.) Run it:  `java -jar reno-0.3.1.jar`
 {{< /tab >}}
 
 {{< /tabs >}}
